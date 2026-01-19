@@ -7,6 +7,7 @@ import cors from "cors";
 import userRouter from "./routes/user.route.js";
 import authRouter from "./routes/auth.route.js";
 import listingRouter from "./routes/listing.route.js";
+import adminRouter from "./routes/admin.route.js";
 
 // import listingRoutes from "./routes/listing.route.js"; // <--- add this
 
@@ -39,6 +40,8 @@ app.get("/", (req, res) => {
 app.use("/api/user", userRouter);
 app.use("/api/auth", authRouter);
 app.use("/api/listing", listingRouter); // <--- mount listing routes
+app.use("/api/admin", adminRouter);
+
 
 // global error handler (keeps as-is)
 app.use((err, req, res, next) => {
@@ -47,6 +50,7 @@ app.use((err, req, res, next) => {
   return res.status(statusCode).json({ success: false, statusCode, message });
 });
 
-app.listen(3000, () => {
-  console.log("Server running on port 3000");
+app.listen(process.env.PORT || 3000, () => {
+  console.log("Server running");
 });
+
