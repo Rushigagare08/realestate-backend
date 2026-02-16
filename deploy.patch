@@ -1,0 +1,179 @@
+diff --git a/backend/index.js b/backend/index.js
+index 0000000..0000000 100644
+--- a/backend/index.js
++++ b/backend/index.js
+@@
+ import express from "express";
+ import dotenv from "dotenv";
+ import mongoose from "mongoose";
+ import cookieParser from "cookie-parser";
+ import cors from "cors";
++import path from "path";
++import { fileURLToPath } from "url";
+ import userRouter from "./routes/user.route.js";
+ import authRouter from "./routes/auth.route.js";
+ import listingRouter from "./routes/listing.route.js";
+ import adminRouter from "./routes/admin.route.js";
+ 
+ dotenv.config();
+ const app = express();
+ 
++const __filename = fileURLToPath(import.meta.url);
++const __dirname = path.dirname(__filename);
++
+ app.use(express.json());
+ app.use(cookieParser());
+ 
++const allowedOrigins = [
++  "http://localhost:5173",
++  "http://localhost:5174",
++  ...(process.env.CLIENT_URL ? [process.env.CLIENT_URL] : []),
++];
++
+ app.use(
+   cors({
+-    origin: [
+-      "http://localhost:5173",
+-      "http://localhost:5174",
+-      "https://your-frontend.vercel.app",
+-    ],
++    origin: (origin, callback) => {
++      if (!origin || allowedOrigins.includes(origin)) {
++        return callback(null, true);
++      }
++      return callback(new Error("Not allowed by CORS"));
++    },
+     credentials: true,
+   })
+ );
+@@
+-app.get("/", (req, res) => {
+-  res.send("Backend is working!");
++app.get("/api/health", (req, res) => {
++  res.status(200).json({ status: "ok" });
+ });
+ 
+ app.use("/api/user", userRouter);
+ app.use("/api/auth", authRouter);
+ app.use("/api/listing", listingRouter);
+ app.use("/api/admin", adminRouter);
+ 
++if (process.env.NODE_ENV === "production") {
++  const frontendDistPath = path.resolve(__dirname, "../frontend/dist");
++  app.use(express.static(frontendDistPath));
++
++  app.get(/^(?!\/api).*/, (req, res) => {
++    res.sendFile(path.join(frontendDistPath, "index.html"));
++  });
++} else {
++  app.get("/", (req, res) => {
++    res.send("Backend is working!");
++  });
++}
++
+ app.use((err, req, res, next) => {
+   const statusCode = err.statusCode || 500;
+   const message = err.message || "Internal Server Error";
+   return res.status(statusCode).json({ success: false, statusCode, message });
+ });
+ 
+ app.listen(process.env.PORT || 3000, () => {
+   console.log("Server running");
+ });
+diff --git a/package.json b/package.json
+index 0000000..0000000 100644
+--- a/package.json
++++ b/package.json
+@@
+   "scripts": {
+     "dev": "nodemon backend/index.js",
++    "build": "npm ci --prefix frontend && npm run build --prefix frontend",
+     "start": "node backend/index.js"
+   },
+diff --git a/frontend/src/Pages/SignIn.jsx b/frontend/src/Pages/SignIn.jsx
+index 0000000..0000000 100644
+--- a/frontend/src/Pages/SignIn.jsx
++++ b/frontend/src/Pages/SignIn.jsx
+@@
+-import Oauth from "../components/Oauth";
++import Oauth from "../components/OAuth";
+diff --git a/frontend/src/Pages/SignUp.jsx b/frontend/src/Pages/SignUp.jsx
+index 0000000..0000000 100644
+--- a/frontend/src/Pages/SignUp.jsx
++++ b/frontend/src/Pages/SignUp.jsx
+@@
+-import Oauth from "../components/Oauth";
++import Oauth from "../components/OAuth";
+diff --git a/.env.example b/.env.example
+new file mode 100644
+--- /dev/null
++++ b/.env.example
+@@
++MONGODB_URL=mongodb+srv://<user>:<password>@<cluster>/<db>
++JWT_SECRET=replace-with-a-strong-secret
++CLIENT_URL=http://localhost:5173
++PORT=3000
++NODE_ENV=development
+diff --git a/README.md b/README.md
+new file mode 100644
+--- /dev/null
++++ b/README.md
+@@
++# Real Estate Backend + Frontend Deployment Guide
++
++This project is now configured for **single-service deployment** (Express serves the built Vite app in production).
++
++## 1) Required environment variables
++
++Create these variables in your hosting provider:
++
++- `MONGODB_URL` - MongoDB connection string
++- `JWT_SECRET` - JWT signing secret used by auth controllers
++- `CLIENT_URL` - Public frontend URL (used for CORS), for example `https://your-app.onrender.com`
++- `NODE_ENV` - set to `production`
++
++For local development, keep using your local `.env` file.
++
++## 2) Deploy on Render (recommended for this setup)
++
++1. Push this repository to GitHub.
++2. In Render, create a **Web Service** connected to this repo.
++3. Configure:
++   - **Build Command:** `npm install && npm run build`
++   - **Start Command:** `npm start`
++4. Add the environment variables above.
++5. Deploy.
++
++Render will:
++- install backend dependencies,
++- build the frontend into `frontend/dist`,
++- run `node backend/index.js`,
++- and Express will serve both API (`/api/*`) and frontend routes.
++
++## 3) Local production smoke test (optional)
++
++```bash
++npm install
++npm run build
++NODE_ENV=production npm start
++```
++
++Open `http://localhost:3000` for the frontend and `http://localhost:3000/api/health` for backend health.
++
++## 4) Development workflow
++
++Run backend dev server from repo root:
++
++```bash
++npm run dev
++```
++
++Run frontend separately in another terminal:
++
++```bash
++cd frontend
++npm install
++npm run dev
++```
++
++Frontend dev server proxies `/api` to `http://localhost:3000` via Vite config.
