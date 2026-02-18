@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
-import Oauth from "../components/Oauth";
+import Oauth from "../components/OAuth";
 
 export default function SignUp() {
   const navigate = useNavigate();
