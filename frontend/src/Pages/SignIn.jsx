@@ -4,7 +4,7 @@ import { useDispatch } from "react-redux";
 import { signInStart, signInSuccess, signInFailure } from "../redux/user/userSlice";
 import { useNavigate, Link } from "react-router-dom";
 import { toast } from "react-toastify";
-import Oauth from "../components/Oauth";
+import Oauth from "../components/OAuth";
 
 export default function SignIn() {
   const dispatch = useDispatch();
